@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>五子棋</title>
+  <style>
+    .content{
+      display: flex;
+      /* justify-content: space-around; */
+    }
+    #app{
+      display: flex;
+      width: 480px;
+      flex-wrap: wrap;
+      border-left: 1px solid #666;
+      border-bottom: 1px solid #666;
+    }
+    #app p{
+      box-sizing: border-box;
+      margin: 0;
+      width: 30px;
+      height: 30px;
+      line-height: 30px;
+      text-align: center;
+      border-top: 1px solid #666;
+      border-right: 1px solid #666;
+    }
+    .menu{
+      margin-left: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div class="content">
+    <div id="app"></div>
+    <div class="menu">
+      <p id="tip">请 X 下子</p>
+      <p><button onclick="revoke()">撤销</button></p>
+      <p><button onclick="again()">再来一局</button></p>
+      
+    </div>
+  </div>
+
+<script>
+  var app = document.getElementById("app");
+
+  var step = new Array(16);      // 记录步骤
+  for (var i = 0; i < 16; i++) { 
+    step[i] = new Array(16);
+    for (var j = 0; j < 16; j++) { 
+      step[i][j] = 0;
+    } 
+  }
+  var prestep = JSON.parse(JSON.stringify(step));   //上一步
+  var executor = true;    // 轮到谁下棋
+  var length = 0;         // 第多少步
+  var win = false;        // 是否有胜利者
+  
+  checkWin = function(y,x){
+    let i = 0;
+    let j = 0;
+    let aa = function(){  //竖向检测
+      if( y-i-1 >= 0 && step[y][x] == step[y-i-1][x]){
+        i++
+        aa()
+      }else if( y+j+1 <= 15 && step[y][x] == step[y+j+1][x]){
+        j++
+        aa()
+      }
+    }
+    aa()
+    // console.log(i,j)
+    if(i+j >= 4){
+      return step[y][x]
+    }else{
+      i = 0;
+      j = 0;
+    }
+
+    let bb = function(){  // 上左下右方向检测
+      if(y-i-1 >= 0 && x-i-1 >= 0 && step[y][x] == step[y-i-1][x-i-1]){
+        i++
+        bb()
+      }else if( y+j+1 <= 15 && x+j+1 <= 15 && step[y][x] == step[y+j+1][x+j+1]){
+        j++
+        bb()
+      }
+    }
+    bb()
+    // console.log(i,j)
+    if(i+j >= 4){
+      return step[y][x]
+    }else{
+      i = 0;
+      j = 0;
+    }
+
+    let cc = function(){  // 上右下左方向检测
+      if(y-i-1 >= 0 && x+i+1 <= 15 && step[y][x] == step[y-i-1][x+i+1]){
+        i++
+        cc()
+      }else if(x-j-1>=0 && y+j+1<=15 && step[y][x] == step[y+j+1][x-j-1]){
+        j++
+        cc()
+      }
+    }
+    cc()
+    // console.log(i,j)
+    if(i+j >= 4){
+      return step[y][x]
+    }else{
+      i = 0;
+      j = 0;
+    }
+
+    let dd = function(){  // 横向检测
+      if(x-i-1 >=0 && step[y][x] == step[y][x-i-1]){
+        i++
+        dd()
+      }else if(x+j+1 <= 15 && step[y][x] == step[y][x+j+1]){
+        j++
+        dd()
+      }
+    }
+    dd()
+    // console.log(i,j)
+    if(i+j >= 4){
+      return step[y][x]
+    }else{
+      i = 0;
+      j = 0;
+    }
+    
+  }
+  revoke = function(){
+    if(win){
+      return
+    }
+    executor = !executor
+    length --;
+    document.getElementById('tip').innerHTML = '请 '+ (executor ? 'X' : 'O') + ' 下子'
+    step = prestep
+    for(let i=0; i<256; i++){
+      let x = i%16;
+      let y = Math.floor(i/16);
+      app.children[i].innerHTML = step[y][x] == 0 ? '' : step[y][x]
+    }
+  }
+  again = function(){
+    executor = true
+    length = 0
+    win = false
+
+    for (var i = 0; i < 16; i++) {
+      for (var j = 0; j < 16; j++) { 
+        step[i][j] = 0;
+      }
+    }
+    document.getElementById('tip').innerHTML = '请 X 下子'
+
+    for(let i=0; i<256; i++){
+      app.children[i].innerHTML = ''
+    }
+  }
+  for(let i=0; i<256; i++){
+    let p = document.createElement("p")
+    p.setAttribute("y",Math.floor(i/16))
+    p.setAttribute("x",i%16)
+    p.onclick = function(){
+      if(!win){
+        if(!this.innerHTML){
+          length++;
+          let x = parseInt(this.getAttribute("x"));
+          let y = parseInt(this.getAttribute("y"));
+
+          prestep = JSON.parse(JSON.stringify(step))
+
+          step[y][x] = executor ? 'X' : 'O'
+
+          this.innerHTML = executor ? 'X' : 'O'
+
+          executor = !executor
+
+          document.getElementById('tip').innerHTML = '请 '+ (executor ? 'X' : 'O') + ' 下子'
+
+          // if(length>=9){
+            let winner = checkWin(y,x)
+            if(winner){
+              win = true
+              document.getElementById('tip').innerHTML = '获胜者'+ winner
+            }
+          // }
+        }
+      }
+    }
+
+    app.append(p)
+  }
+
+</script>
+
+</body>
+</html>
